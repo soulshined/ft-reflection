@@ -4,7 +4,7 @@ namespace FT\Reflection;
 
 use ReflectionMethod;
 
-final class Method extends AnnotatedMember {
+class Method extends AnnotatedMember {
 
     public readonly TypeDescriptor $returnType;
     /**
@@ -12,12 +12,12 @@ final class Method extends AnnotatedMember {
      */
     public readonly array $parameters;
 
-    public function __construct(public readonly ReflectionMethod $delegate)
+    public function __construct(public readonly ReflectionMethod $delegate, private readonly DescriptorMapping $mappings = new DescriptorMapping())
     {
         parent::__construct($delegate);
         $this->delegate->setAccessible(true);
         $this->returnyType = new TypeDescriptor($delegate->getReturnType(), $delegate->hasReturnType());
-        $this->parameters = array_map(Parameter::new(), $delegate->getParameters());
+        $this->parameters = array_map(fn ($i) => $mappings->parameter_class->newInstanceArgs([$i]), $delegate->getParameters());
     }
 
     public function get_parameter(string $name) : ?Parameter {
@@ -34,8 +34,4 @@ final class Method extends AnnotatedMember {
         return $this->delegate->invoke($instance, ...$args);
     }
 
-    public static function new(): callable
-    {
-        return fn ($i) => new Method($i);
-    }
 }

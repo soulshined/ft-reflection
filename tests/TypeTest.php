@@ -2,6 +2,9 @@
 
 use FT\Reflection\AbstractMember;
 use FT\Reflection\ClassCache;
+use FT\Reflection\DescriptorMapping;
+use FT\Reflection\Property;
+use FT\Reflection\Type;
 use PHPUnit\Framework\TestCase;
 
 include_once __DIR__ . '/../vendor/autoload.php';
@@ -71,8 +74,38 @@ final class TypeTest extends TestCase {
         $this->assertEquals(14, count($public));
     }
 
+    /**
+    * @test
+    */
+    public function custom_mapping_test() {
+        $t = ClassCache::get_with_mappings(C::class, new DescriptorMapping(
+            type_class: MyExtendedTypeClass::class,
+            property_class: MyExtendedPropertyClass::class)
+        );
+        $this->assertNotNull($t);
+
+        $this->assertEquals(MyExtendedTypeClass::class, $t::class);
+        foreach ($t->properties as $prop)
+            $this->assertEquals(MyExtendedPropertyClass::class, $prop::class);
+    }
+
 }
 
+class MyExtendedTypeClass extends Type {
+
+    public function __construct(ReflectionClass $delegate, DescriptorMapping $mappings = new DescriptorMapping())
+    {
+        parent::__construct($delegate, $mappings);
+    }
+
+}
+
+class MyExtendedPropertyClass extends Property {
+    public function __construct(ReflectionProperty $param)
+    {
+        parent::__construct($param);
+    }
+}
 
 class MyClassProtectedConstructor {
 

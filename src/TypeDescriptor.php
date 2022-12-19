@@ -169,6 +169,21 @@ final class TypeDescriptor {
             $this->has_type('DatePeriod');
     }
 
+    public function can_any_class() : bool {
+        return $this->isMixed || !empty($this->get_class_names());
+    }
+
+    /**
+     * return \ReflectionNamedType[]
+     */
+    public function get_class_names() : array {
+        $out = [];
+
+        foreach ($this->types as $type) if (class_exists($type->getName())) $out[] = $type;
+
+        return $out;
+    }
+
     public function has_type(string $name) : bool
     {
         if (!$this->hasType) return false;

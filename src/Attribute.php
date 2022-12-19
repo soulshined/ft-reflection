@@ -4,6 +4,7 @@ namespace FT\Reflection;
 
 use Attribute as GlobalAttribute;
 use FT\Reflection\Attributes\Inheritable;
+use FT\Reflection\Attributes\PEL;
 use FT\Reflection\Exceptions\ReflectionException;
 use ReflectionAttribute;
 use ReflectionClass;
@@ -46,28 +47,38 @@ final class Attribute
         if ($constr !== null)
             $params = array_map(fn ($i) => new Parameter($i), $constr->getParameters());
 
+        if (count($attr->getArguments()) > 0 && count($params) === 0)
+            throw new ReflectionException($attr->getName() . " does not have any parameters but values were provided");
+
         $fargs = [];
         foreach ($attr->getArguments() as $key => $value) {
             if (is_int($key)) {
                 if (count($params) > 1)
                     throw new ReflectionException("Positional arguments are not permitted for attributes with more than 1 parameter. Attribute members must be qualified by their name @" . $this->shortname);
 
-                $fargs[$params[0]->name] = $value;
+                $fargs[$params[0]->name] = $params[0]->has_attribute(PEL::class)
+                    ? PEL::eval($value)
+                    : $value;
                 continue;
             }
 
-            $pindex = array_search($key, array_map(fn ($i) => $i->name, $params));
-            if ($pindex === false)
+            $parameter = array_first(fn ($i) => $i->name === $key, $params);
+            if ($parameter === null)
                 throw new ReflectionException("$key does not exist on @" . $this->shortname);
 
-            $fargs[$key] = $value;
+            $fargs[$key] = $parameter->has_attribute(PEL::class) ? PEL::eval($value) : $value;
         }
 
         $out_params = array_diff(array_map(fn ($i) => $i->name, $params), array_keys($fargs));
         foreach ($out_params as $name) {
-            $pindex = array_search($name, array_map(fn ($i) => $i->name, $params));
-            if ($params[$pindex]->delegate->isDefaultValueAvailable())
-                $fargs[$name] = $params[$pindex]->delegate->getDefaultValue();
+            $parameter = array_first(fn ($i) => $i->name === $name, $params);
+            if ($parameter->delegate->isDefaultValueAvailable()) {
+                $resolved = $parameter->delegate->getDefaultValue();
+                if ($parameter->has_attribute(PEL::class))
+                    $resolved = PEL::eval($resolved);
+
+                $fargs[$name] = $resolved;
+            }
         }
 
         $this->arguments = (object) $fargs;

@@ -2,6 +2,7 @@
 
 namespace FT\Reflection;
 
+use FT\Reflection\Attributes\PEL;
 use ReflectionProperty;
 
 class Property extends AnnotatedMember
@@ -20,12 +21,21 @@ class Property extends AnnotatedMember
         if ($instance == null) {
             if (!$this->delegate->isStatic()) return null;
 
-            return $this->delegate->getValue();
+            $dvalue = $this->delegate->getValue();
+            if (!$this->delegate->isInitialized(null)) {
+                if ($this->has_attribute(PEL::class))
+                    $dvalue = PEL::eval($dvalue ?? "null");
+            }
+            return $dvalue;
         }
 
         if (!$this->delegate->isInitialized($instance)) {
-            if ($this->delegate->hasDefaultValue())
-                return $this->delegate->getDefaultValue();
+            if ($this->delegate->hasDefaultValue()) {
+                $value = $this->delegate->getDefaultValue();
+                if ($this->has_attribute(PEL::class))
+                    $value = PEL::eval($value ?? "null");
+                return $value;
+            }
 
             return null;
         }
@@ -38,8 +48,4 @@ class Property extends AnnotatedMember
         return $this->delegate->getDeclaringClass()->name . "." . $this->name;
     }
 
-    public static function new(): callable
-    {
-        return fn ($i) => new Property($i);
-    }
 }

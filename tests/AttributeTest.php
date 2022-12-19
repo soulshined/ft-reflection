@@ -89,5 +89,27 @@ final class AttributeTest extends TestCase {
         );
     }
 
+    /**
+    * @test
+    */
+    public function pel_should_eval_test() {
+        putenv('party_name=bazzbuzz');
+
+        $c = new Type(new ReflectionClass(C::class));
+        $property = $c->get_property('pelProperty');
+
+        $value = $property->get_attribute(MyPELAttribute::class)->getArgument('value');
+        $this->assertEquals('my favorite number is: 2', $value);
+        $this->assertEquals('string', gettype($value));
+
+        $method = $c->get_method('name');
+        $param = $method->parameters[0];
+        $this->assertEquals("bazzbuzz", $param->get_attribute(MyPELAttribute::class)->getArgument('value'));
+        $this->assertEquals('string', gettype($value));
+
+        $constant = $c->get_constant('NAME');
+        $this->assertEquals("Steve", $constant->get_attribute(MyPELAttribute::class)->getArgument('value'));
+    }
+
 
 }

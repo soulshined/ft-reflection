@@ -3,6 +3,7 @@
 use FT\Reflection\AbstractMember;
 use FT\Reflection\AnnotatedMember;
 use FT\Reflection\Attributes\Inheritable;
+use FT\Reflection\Attributes\PEL;
 
 enum MyEnum
 {
@@ -29,7 +30,7 @@ trait LoggerTrait {
 interface PartyInterface {
 
     #[MyExtendedMethodAttribute(['a', 'b', 'c'])]
-    static function name(): string;
+    static function name(string $name): string;
 
 }
 
@@ -38,7 +39,7 @@ interface PersonInterface extends PartyInterface {
     public final const DEFAULT_NAME = "John";
 
     #[MyExtendedMethodAttribute(['d', 'b', 'e'])]
-    static function name(): string;
+    static function name(string $name): string;
     function age() : int;
 }
 
@@ -48,6 +49,8 @@ class A implements PersonInterface {
     #[MyExtendedPropertyAttribute(value: ['a', 'b', 'c', 'd'])]
     private mixed $property;
     private static string $staticProperty = "static value";
+
+    #[MyPELAttribute("{{ 'Steve' }}")]
     public final const NAME = "A";
     #[MyExtendedPropertyAttribute]
     private const NAME2 = "abc123";
@@ -59,7 +62,7 @@ class A implements PersonInterface {
         return null;
     }
 
-    static function name(): string
+    static function name(#[MyPELAttribute("{{ getenv('party_name') }}")] string $name): string
     {
         return "foobar";
     }
@@ -76,6 +79,9 @@ class B extends A
     #[MyExtendedPropertyAttribute(value: ['a', 'c', 'e'])]
     private mixed $property;
     private mixed $propertyWithDefault = 12345;
+
+    #[MyPELAttribute("my favorite number is: {{ 1 + 1 }}")]
+    private string $pelProperty;
 
     #[MyExtendedMethodAttribute(['a', 'c', 'e'])]
     protected function no_type()
@@ -182,4 +188,12 @@ class MyClassAttribute {
 #[Attribute]
 class MyExtendedAttribute extends MyClassAttribute {
 
+}
+
+#[Attribute]
+class MyPELAttribute {
+    public function __construct(#[PEL] public readonly string $value)
+    {
+
+    }
 }

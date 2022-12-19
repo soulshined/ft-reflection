@@ -146,5 +146,4 @@ abstract class AnnotatedMember extends AbstractMember
         }
     }
 
-    public abstract static function new() : callable;
 }

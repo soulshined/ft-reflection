@@ -2,9 +2,10 @@
 
 namespace FT\Reflection;
 
+use FT\Reflection\Attributes\PEL;
 use ReflectionClassConstant;
 
-final class Constant extends AnnotatedMember {
+class Constant extends AnnotatedMember {
 
     public readonly mixed $value;
     public readonly bool $isFinal;
@@ -12,13 +13,12 @@ final class Constant extends AnnotatedMember {
     public function __construct(public readonly ReflectionClassConstant $delegate)
     {
         parent::__construct($delegate);
-        $this->value = $delegate->getValue();
-        $this->isFinal = $delegate->isFinal();
-    }
+        $value = $delegate->getValue();
+        if ($this->has_attribute(PEL::class))
+            $value = PEL::eval($value ?? "null");
 
-    public static function new(): callable
-    {
-        return fn ($i) => new Constant($i);
+        $this->value = $value;
+        $this->isFinal = $delegate->isFinal();
     }
 
 }
